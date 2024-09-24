@@ -1,0 +1,29 @@
+version: v2
+managed:
+  enabled: true
+  disable:
+    - file_option: go_package
+      module: buf.build/googleapis/googleapis
+    - file_option: go_package
+      module: buf.build/envoyproxy/protoc-gen-validate
+    - file_option: go_package
+      module: buf.build/grpc-ecosystem/gateway
+  override:
+    - file_option: go_package_prefix
+      value: .
+plugins:
+  - remote: buf.build/protocolbuffers/go
+    out: pkg
+    opt: paths=source_relative
+  - remote: buf.build/grpc/go
+    out: pkg
+    opt: paths=source_relative
+  - remote: buf.build/bufbuild/validate-go
+    out: pkg
+    opt: paths=source_relative
+  - remote: buf.build/grpc-ecosystem/gateway
+    out: pkg
+    opt:
+      - paths=source_relative
+  - remote: buf.build/grpc-ecosystem/openapiv2
+    out: pkg

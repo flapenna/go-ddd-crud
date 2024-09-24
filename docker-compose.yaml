@@ -1,0 +1,108 @@
+services:
+  mongo:
+    build:
+      context: ./build/mongodb
+      dockerfile: Dockerfile
+    container_name: mongodb-replicaset
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: root
+    ports:
+      - 27017:27017
+    command: --replSet rs0 --keyFile /etc/mongo-keyfile --bind_ip_all --port 27017
+    healthcheck:
+      test: echo "try { rs.status() } catch (err) { rs.initiate({_id:'rs0',members:[{_id:0,host:'localhost:27017'}]}) }" | mongosh --port 27017 -u root -p root --authenticationDatabase admin
+      interval: 5s
+      timeout: 30s
+      start_period: 15s
+      retries: 10
+    networks:
+      - shared-net
+    volumes:
+      - "mongo_data:/data/db"
+      - "mongo_config:/data/configdb"
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:5.5.0
+    container_name: zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+    networks:
+      - shared-net
+
+  kafka:
+    image: confluentinc/cp-kafka:5.5.0
+    container_name: kafka
+    ports:
+      - 9093:9092
+    depends_on:
+      - zookeeper
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,INTERNAL:PLAINTEXT
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,INTERNAL://0.0.0.0:29094
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9093,INTERNAL://kafka:29094
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    healthcheck:
+      test: [ "CMD", "kafka-topics", "--list", "--zookeeper", "zookeeper:2181" ]
+      interval: 10s
+      timeout: 30s
+      retries: 5
+    networks:
+      - shared-net
+
+  kafdrop:
+    image: obsidiandynamics/kafdrop
+    container_name: kafdrop
+    environment:
+      KAFKA_BROKERCONNECT: "kafka:29094"
+    ports:
+      - "9000:9000"
+    depends_on:
+      kafka:
+        condition: service_healthy
+    networks:
+      - shared-net
+
+  go-ddd-crud:
+    build:
+      dockerfile: ./build/service/Dockerfile
+      context: .
+    container_name: service
+    restart: on-failure
+    expose:
+      - 8090
+      - 9090
+    ports:
+      - 8090:8090
+      - 9090:9090
+    environment: # Pass environment variables to the service
+      SERVICE_GRPC_PORT: 9090
+      SERVICE_HTTP_PORT: 8090
+      MONGODB_URI: mongodb://root:root@mongo:27017/?directConnection=true&readPreference=primary&replicaSet=rs0
+      MONGODB_DB: go-ddd-crud
+      MONGODB_USER_COLLECTION: users
+      KAFKA_SERVER: kafka:29094
+    depends_on:
+      mongo:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8090/api/v1/health | jq -e '.status == \"OK\"' > /dev/null"]
+      interval: 5s
+      timeout: 30s
+      retries: 6
+      start_period: 15s
+    networks:
+      - shared-net
+
+networks:
+  shared-net:
+    driver: bridge
+
+volumes:
+  mongo_data:
+  mongo_config:

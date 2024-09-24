@@ -1,0 +1,98 @@
+{
+	"info": {
+		"_postman_id": "78f5afbc-4acf-40a7-82f6-56c08be32ee9",
+		"name": "Go-DDD_HTTP",
+		"schema": "https://schema.getpostman.com/json/collection/v2.0.0/collection.json",
+		"_exporter_id": "19331009"
+	},
+	"item": [
+		{
+			"name": "Health",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": "localhost:8090/api/v1/health"
+			},
+			"response": []
+		},
+		{
+			"name": "CreateUser",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"first_name\": \"Federico\",\n    \"last_name\": \"La Penna\",\n    \"country\": \"IT\",\n    \"email\": \"email@gmail.com\",\n    \"nickname\": \"Pennino\",\n    \"password\": \"Mypassword!\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": "localhost:8090/api/v1/users"
+			},
+			"response": []
+		},
+		{
+			"name": "UpdateUser",
+			"request": {
+				"method": "PUT",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"first_name\": \"Federico Updated\",\n    \"last_name\": \"La Penna Updated\",\n    \"country\": \"IT\",\n    \"email\": \"updated@gmail.com\",\n    \"nickname\": \"Pennino v2\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": "localhost:8090/api/v1/users/6b78b575-fa17-44f5-bac1-d4b7e379382e"
+			},
+			"response": []
+		},
+		{
+			"name": "DeleteUser",
+			"request": {
+				"method": "DELETE",
+				"header": [],
+				"url": "localhost:8090/api/v1/users/3968a215-1269-489b-b8f4-f14d420e6e9d"
+			},
+			"response": []
+		},
+		{
+			"name": "ListUsers",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "localhost:8090/api/v1/users?page=0&page_size=10&country=IT",
+					"host": [
+						"localhost"
+					],
+					"port": "8090",
+					"path": [
+						"api",
+						"v1",
+						"users"
+					],
+					"query": [
+						{
+							"key": "page",
+							"value": "0"
+						},
+						{
+							"key": "page_size",
+							"value": "10"
+						},
+						{
+							"key": "country",
+							"value": "IT"
+						}
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}

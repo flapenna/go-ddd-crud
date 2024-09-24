@@ -1,0 +1,94 @@
+syntax = "proto3";
+import "google/protobuf/empty.proto";
+import "google/protobuf/timestamp.proto";
+import "validate/validate.proto";
+import "google/api/annotations.proto";
+
+option go_package = "github.com/flapenna/go-ddd-crud/pkg/pb/user/v1";
+
+/* SERVICES DEFINITION */
+service UserService {
+
+  rpc CreateUser(CreateUserRequest) returns (User) {
+    option (google.api.http) = {
+      post: "/api/v1/users"
+      body: "*"
+    };
+  }
+
+  rpc UpdateUser(UpdateUserRequest) returns (User) {
+    option (google.api.http) = {
+      put: "/api/v1/users/{id}"
+      body: "*"
+    };
+  }
+
+  rpc DeleteUser(DeleteUserRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      delete: "/api/v1/users/{id}"
+    };
+  }
+
+  rpc ListUsers(ListUsersRequest) returns (ListUsersResponse){
+    option (google.api.http) = {
+      get: "/api/v1/users"
+    };
+  }
+
+}
+
+/* MESSAGES DEFINITIONS */
+message CreateUserRequest {
+  string first_name = 1 [(validate.rules).string = {pattern: "^[a-zA-Z ]+$",min_len:2, max_len: 50}];
+  string last_name = 2 [(validate.rules).string = {pattern: "^[a-zA-Z ]+$", min_len:2,max_len: 50}];
+  string email = 3 [(validate.rules).string.email = true];
+  string password = 4 [
+    (validate.rules).string = {
+      min_len: 8,
+      max_len: 30
+    }
+  ];
+  string country = 5 [(validate.rules).string = {pattern: "^[A-Z]{2}$"}];
+  string nickname = 6 [(validate.rules).string = {min_len:2,max_len: 50}];
+}
+
+message UpdateUserRequest {
+  string id = 1 [(validate.rules).string.uuid = true];
+  string first_name = 2 [(validate.rules).string = {pattern: "^[a-zA-Z ]+$",min_len:2, max_len: 50}];
+  string last_name = 3 [(validate.rules).string = {pattern: "^[a-zA-Z ]+$",min_len:2, max_len: 50}];
+  string email = 4 [(validate.rules).string.email = true];
+  string country = 5 [(validate.rules).string = {pattern: "^[A-Z]{2}$"}];
+  string nickname = 6 [(validate.rules).string = {min_len:2,max_len: 50}];
+}
+
+message DeleteUserRequest {
+  string id = 1 [(validate.rules).string.uuid = true];
+}
+
+message User {
+  string id = 1;
+  string first_name = 2;
+  string last_name = 3;
+  string email = 4;
+  string country = 5;
+  string nickname = 6;
+  google.protobuf.Timestamp created_at = 7;
+  google.protobuf.Timestamp updated_at = 8;
+}
+
+message ListUsersRequest {
+  uint32 page = 1;
+  uint32 page_size = 2;
+  optional string country = 3 [(validate.rules).string = {pattern: "^[A-Z]{2}$"}];
+  optional string first_name = 4 [(validate.rules).string = {pattern: "^[a-zA-Z ]+$",min_len:2,max_len: 50}];
+  optional string last_name = 5 [(validate.rules).string = {pattern: "^[a-zA-Z ]+$",min_len:2, max_len: 50}];
+  optional string nickname = 6 [(validate.rules).string = {min_len:2,max_len: 50}];
+  optional string email = 7 [(validate.rules).string.email = true];
+}
+
+message ListUsersResponse {
+  uint32 page = 1;
+  uint32 page_size = 2;
+  uint32 total_count = 3;
+  repeated User results = 4;
+}

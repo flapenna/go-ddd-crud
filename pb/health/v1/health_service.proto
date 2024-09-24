@@ -1,0 +1,21 @@
+syntax = "proto3";
+import "google/protobuf/empty.proto";
+import "google/api/annotations.proto";
+
+option go_package = "github.com/flapenna/go-ddd-crud/pkg/pb/health/v1";
+
+/* SERVICES DEFINITION */
+service HealthService {
+
+  rpc Health(google.protobuf.Empty) returns (HealthResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/health"
+    };
+  }
+
+}
+
+/* MESSAGES DEFINITIONS */
+message HealthResponse {
+    string status = 1;
+}

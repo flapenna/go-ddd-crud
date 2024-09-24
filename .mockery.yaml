@@ -1,0 +1,9 @@
+outpkg: mocks
+dir: internal/mocks
+packages:
+  github.com/flapenna/go-ddd-crud/internal/domain/user:
+    interfaces:
+      UserRepository:
+      UserService:
+      UserProducer:
+      UserWatcher:

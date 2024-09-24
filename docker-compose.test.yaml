@@ -1,0 +1,94 @@
+services:
+  mongo-test:
+    build:
+      context: ./build/mongodb
+      dockerfile: Dockerfile
+    container_name: mongo-test
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: root
+    ports:
+      - "27018:27018"
+    command: --port 27018 --replSet rs0 --keyFile /etc/mongo-keyfile --bind_ip_all
+    healthcheck:
+      test: echo "try { rs.status() } catch (err) { rs.initiate({_id:'rs0',members:[{_id:0,host:'localhost:27018'}]}) }" | mongosh --port 27018 -u root -p root --authenticationDatabase admin
+      interval: 5s
+      timeout: 15s
+      start_period: 15s
+      retries: 10
+    networks:
+      - shared-net-test
+    volumes:
+      - "mongo_data1:/data/db"
+      - "mongo_config1:/data/configdb"
+
+  zookeeper-test:
+    image: confluentinc/cp-zookeeper:5.5.0
+    container_name: zookeeper-test
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2182
+    networks:
+      - shared-net-test
+
+  kafka-test:
+    image: confluentinc/cp-kafka:5.5.0
+    container_name: kafka-test
+    ports:
+      - 9192:9192
+    depends_on:
+      - zookeeper-test
+    environment:
+      KAFKA_BROKER_ID: 2
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper-test:2182
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,INTERNAL:PLAINTEXT
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9192,INTERNAL://0.0.0.0:29094
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9192,INTERNAL://kafka-test:29094
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    healthcheck:
+      test: [ "CMD", "kafka-topics", "--list", "--zookeeper", "zookeeper-test:2182" ]
+      interval: 10s
+      timeout: 30s
+      retries: 3
+    networks:
+      - shared-net-test
+  go-ddd-crud-test:
+    build:
+      dockerfile: ./build/service/Dockerfile
+      context: .
+    container_name: service-test
+    restart: on-failure
+    expose:
+      - 8091
+      - 9091
+    ports:
+      - 8091:8091
+      - 9091:9091
+    environment: # Pass environment variables to the service
+      SERVICE_GRPC_PORT: 9091
+      SERVICE_HTTP_PORT: 8091
+      MONGODB_URI: mongodb://root:root@mongo-test:27018/?directConnection=true&readPreference=primary&replicaSet=rs0
+      MONGODB_DB: go-ddd-crud
+      MONGODB_USER_COLLECTION: users
+      KAFKA_SERVER: kafka-test:29094
+    depends_on:
+      mongo-test:
+        condition: service_healthy
+      kafka-test:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8091/api/v1/health | jq -e '.status == \"OK\"' > /dev/null"]
+      interval: 5s
+      timeout: 30s
+      retries: 3
+      start_period: 10s
+    networks:
+      - shared-net-test
+
+networks:
+  shared-net-test:
+    driver: bridge
+
+volumes:
+  mongo_data1:
+  mongo_config1:

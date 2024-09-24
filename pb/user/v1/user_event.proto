@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+import "pb/user/v1/user_service.proto";
+
+option go_package = "github.com/flapenna/go-ddd-crud/pkg/pb/user/v1";
+
+message UserEvent {
+  string id = 1;
+  string user_id = 2;
+  optional User before_change = 3;
+  optional User after_change = 4;
+  OperationType operation_type = 5;
+}
+
+enum OperationType {
+  OPERATION_UNSPECIFIED = 0;
+  OPERATION_CREATE = 1;
+  OPERATION_UPDATE = 2;
+  OPERATION_DELETE = 3;
+}
